@@ -28,16 +28,7 @@ FastCode/
 ├── snippets.json    # Snippet'lerin saklandığı JSON dosyası
 └── README.md        # Projenin açıklama dosyası
 ```
-##  Kullanım Kılavuzu
 
-- Go'nun bilgisayarınıza kurulu olduğundan emin olun:
-  $ go version
-
-- Proje klasörüne gidin:
-  $ cd fast-code
-
-- Uygulamayı başlatın:
-  $ go run main.go
 ##  Kullanım Kılavuzu
 
 - Go'nun bilgisayarınıza kurulu olduğundan emin olun:
