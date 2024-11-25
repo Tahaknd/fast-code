@@ -1,11 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"image/color"
 	"log"
-	"os"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -13,51 +11,188 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"snipper/services"
 )
 
-type Snippet struct {
-	Title   string `json:"title"`
-	Content string `json:"content"`
-}
-
-var snippets []Snippet
-var filteredSnippets []Snippet
+var snippetService *services.SnippetService
 var isEditing bool = false
 var editingIndex int = -1
+var currentTheme *customTheme
+var deleteButton, cancelButton *widget.Button
 
-const snippetsFile = "snippets.json"
-
-func loadSnippets() {
-	file, err := os.Open(snippetsFile)
+func main() {
+	snippetService = services.NewSnippetService("snippets.json")
+	err := snippetService.Load()
 	if err != nil {
-		if os.IsNotExist(err) {
-			snippets = []Snippet{}
-			filteredSnippets = snippets
+		log.Fatalf("Error loading snippets: %v", err)
+	}
+
+	myApp := app.New()
+	myWindow := myApp.NewWindow("FastPaste")
+
+	currentTheme = &customTheme{isLight: false}
+	myApp.Settings().SetTheme(currentTheme)
+
+	searchEntry := createStyledInput("Search...")
+	titleEntry := createStyledInput("Subject")
+	contentEntry := createStyledInput("Snippet")
+
+	listContent := container.NewVBox()
+
+	updateSnippetList := func(content *fyne.Container, query string) {
+		content.Objects = nil
+		snippets := snippetService.GetAll()
+
+		for i, snippet := range snippets {
+			if strings.Contains(strings.ToLower(snippet.Title), strings.ToLower(query)) {
+				index := i
+				item := widget.NewButton(snippet.Title, func() {
+					isEditing = true
+					editingIndex = index
+					titleEntry.Entry.SetText(snippet.Title)
+					contentEntry.Entry.SetText(snippet.Content)
+					updateButtonVisibility()
+				})
+				content.Add(item)
+			}
+		}
+
+		content.Refresh()
+	}
+
+	themeDropdown := widget.NewSelect([]string{"White Theme", "Dark Theme"}, func(selected string) {
+		if selected == "White Theme" {
+			currentTheme.isLight = true
+		} else {
+			currentTheme.isLight = false
+		}
+		myApp.Settings().SetTheme(currentTheme)
+		applyInputStyles(searchEntry, titleEntry, contentEntry)
+	})
+	themeDropdown.SetSelected("Dark Theme")
+
+	updateSnippetList(listContent, "")
+
+	searchEntry.Entry.OnChanged = func(query string) {
+		updateSnippetList(listContent, query)
+	}
+
+	saveButton := widget.NewButton("Save", func() {
+		title := strings.TrimSpace(titleEntry.Entry.Text)
+		content := strings.TrimSpace(contentEntry.Entry.Text)
+
+		if title == "" || content == "" {
+			dialog.ShowError(errors.New("Title and content cannot be empty!"), myWindow)
 			return
 		}
-		log.Fatalf("Dosya açılırken hata: %v", err)
-	}
-	defer file.Close()
 
-	data := json.NewDecoder(file)
-	if err := data.Decode(&snippets); err != nil {
-		log.Fatalf("JSON ayrıştırılırken hata: %v", err)
-	}
-	filteredSnippets = snippets
+		if isEditing {
+			_ = snippetService.Update(editingIndex, title, content)
+			isEditing = false
+		} else {
+			_ = snippetService.Add(title, content)
+		}
+
+		editingIndex = -1
+		titleEntry.Entry.SetText("")
+		contentEntry.Entry.SetText("")
+		updateSnippetList(listContent, "")
+		updateButtonVisibility()
+	})
+
+	deleteButton = widget.NewButton("Delete", func() {
+		if editingIndex != -1 {
+			_ = snippetService.Delete(editingIndex)
+			editingIndex = -1
+			isEditing = false
+			titleEntry.Entry.SetText("")
+			contentEntry.Entry.SetText("")
+			updateSnippetList(listContent, "")
+			updateButtonVisibility()
+		}
+	})
+
+	cancelButton = widget.NewButton("Cancel", func() {
+		editingIndex = -1
+		isEditing = false
+		titleEntry.Entry.SetText("")
+		contentEntry.Entry.SetText("")
+		updateButtonVisibility()
+	})
+
+	buttons := container.NewHBox(
+		layout.NewSpacer(),
+		saveButton,
+		deleteButton,
+		cancelButton,
+	)
+
+	updateButtonVisibility()
+
+	content := container.NewVBox(
+		themeDropdown,
+		fixedSpacer(10),
+		searchEntry.Container,
+		fixedSpacer(5),
+		listContent,
+		fixedSpacer(10),
+		titleEntry.Container,
+		fixedSpacer(5),
+		contentEntry.Container,
+		fixedSpacer(20),
+		buttons,
+	)
+
+	myWindow.SetContent(content)
+	myWindow.Resize(fyne.NewSize(800, 600))
+	myWindow.ShowAndRun()
 }
 
-func saveSnippets() {
-	file, err := os.Create(snippetsFile)
-	if err != nil {
-		log.Fatalf("Dosya oluşturulurken hata: %v", err)
+func updateButtonVisibility() {
+	if isEditing {
+		deleteButton.Show()
+		cancelButton.Show()
+	} else {
+		deleteButton.Hide()
+		cancelButton.Hide()
 	}
-	defer file.Close()
+}
 
-	data := json.NewEncoder(file)
-	if err := data.Encode(&snippets); err != nil {
-		log.Fatalf("JSON yazılırken hata: %v", err)
+type styledInput struct {
+	Container *fyne.Container
+	Entry     *widget.Entry
+}
+
+func createStyledInput(placeholder string) *styledInput {
+	entry := widget.NewEntry()
+	entry.SetPlaceHolder(placeholder)
+
+	bg := canvas.NewRectangle(color.White)
+	container := container.NewMax(bg, entry)
+
+	return &styledInput{
+		Container: container,
+		Entry:     entry,
+	}
+}
+
+func fixedSpacer(height float32) fyne.CanvasObject {
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(fyne.NewSize(0, height))
+	return spacer
+}
+
+func applyInputStyles(inputs ...*styledInput) {
+	for _, input := range inputs {
+		if currentTheme.isLight {
+			input.Container.Objects[0] = canvas.NewRectangle(color.RGBA{240, 240, 240, 255})
+		} else {
+			input.Container.Objects[0] = canvas.NewRectangle(color.RGBA{60, 60, 60, 255})
+		}
+		input.Container.Refresh()
 	}
 }
 
@@ -67,24 +202,9 @@ type customTheme struct {
 
 func (c customTheme) BackgroundColor() color.Color {
 	if c.isLight {
-		return color.White
+		return color.RGBA{245, 245, 245, 255}
 	}
 	return color.RGBA{40, 40, 40, 255}
-}
-
-func (c customTheme) ButtonColor() color.Color {
-	return color.RGBA{60, 60, 60, 255}
-}
-
-func (c customTheme) TextColor() color.Color {
-	return color.White
-}
-
-func (c customTheme) HoverColor() color.Color {
-	if c.isLight {
-		return color.RGBA{80, 80, 80, 255}
-	}
-	return color.RGBA{220, 220, 220, 255}
 }
 
 func (c customTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
@@ -92,11 +212,10 @@ func (c customTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) 
 	case theme.ColorNameBackground:
 		return c.BackgroundColor()
 	case theme.ColorNameButton:
-		return c.ButtonColor()
-	case theme.ColorNameForeground:
-		return c.TextColor()
-	case theme.ColorNameHover:
-		return c.HoverColor()
+		if c.isLight {
+			return color.RGBA{200, 200, 200, 255}
+		}
+		return color.RGBA{60, 60, 60, 255}
 	default:
 		return theme.DefaultTheme().Color(name, variant)
 	}
@@ -112,127 +231,4 @@ func (c customTheme) Size(name fyne.ThemeSizeName) float32 {
 
 func (c customTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 	return theme.DefaultTheme().Icon(name)
-}
-
-func updateSnippetList(content *fyne.Container, searchQuery string) {
-	content.Objects = nil
-	filteredSnippets = nil
-
-	for _, snippet := range snippets {
-		if strings.Contains(strings.ToLower(snippet.Title), strings.ToLower(searchQuery)) {
-			filteredSnippets = append(filteredSnippets, snippet)
-		}
-	}
-
-	for i, snippet := range filteredSnippets {
-		index := i
-		item := widget.NewButton(snippet.Title, func() {
-			isEditing = true
-			editingIndex = index
-			titleEntry.SetText(snippet.Title)
-			contentEntry.SetText(snippet.Content)
-		})
-		item.Importance = widget.LowImportance
-		content.Add(item)
-	}
-
-	content.Refresh()
-}
-
-var titleEntry *widget.Entry
-var contentEntry *widget.Entry
-
-func main() {
-	loadSnippets()
-
-	myApp := app.New()
-	myWindow := myApp.NewWindow("FastCode")
-
-	currentTheme := &customTheme{isLight: false}
-	myApp.Settings().SetTheme(currentTheme)
-
-	themeDropdown := widget.NewSelect([]string{"Karanlık", "Beyaz"}, func(value string) {
-		if value == "Beyaz" {
-			currentTheme.isLight = true
-		} else {
-			currentTheme.isLight = false
-		}
-		myApp.Settings().SetTheme(currentTheme)
-	})
-
-	titleEntry = widget.NewEntry()
-	titleEntry.SetPlaceHolder("Başlık")
-
-	contentEntry = widget.NewMultiLineEntry()
-	contentEntry.SetPlaceHolder("İçerik")
-
-	listContent := container.NewVBox()
-	updateSnippetList(listContent, "")
-
-	listBackground := canvas.NewRectangle(color.RGBA{40, 40, 40, 255})
-	listWithBackground := container.NewMax(listBackground, listContent)
-
-	searchEntry := widget.NewEntry()
-	searchEntry.SetPlaceHolder("Ara...")
-	searchEntry.OnChanged = func(query string) {
-		updateSnippetList(listContent, query)
-	}
-
-	saveButton := widget.NewButton("Kaydet", func() {
-		title := strings.TrimSpace(titleEntry.Text)
-		content := strings.TrimSpace(contentEntry.Text)
-
-		if title == "" || content == "" {
-			dialog.ShowError(errors.New("Başlık ve içerik boş olamaz!"), myWindow)
-			return
-		}
-
-		if isEditing {
-			snippets[editingIndex] = Snippet{Title: title, Content: content}
-			isEditing = false
-			editingIndex = -1
-		} else {
-			snippets = append(snippets, Snippet{Title: title, Content: content})
-		}
-
-		saveSnippets()
-		titleEntry.SetText("")
-		contentEntry.SetText("")
-		updateSnippetList(listContent, "")
-	})
-
-	deleteButton := widget.NewButton("Sil", func() {
-		if editingIndex == -1 {
-			dialog.ShowError(errors.New("Silmek için bir kayıt seçin!"), myWindow)
-			return
-		}
-
-		snippets = append(snippets[:editingIndex], snippets[editingIndex+1:]...)
-		saveSnippets()
-		isEditing = false
-		editingIndex = -1
-		titleEntry.SetText("")
-		contentEntry.SetText("")
-		updateSnippetList(listContent, "")
-	})
-
-	cancelButton := widget.NewButton("Vazgeç", func() {
-		isEditing = false
-		editingIndex = -1
-		titleEntry.SetText("")
-		contentEntry.SetText("")
-	})
-
-	content := container.NewVBox(
-		themeDropdown,
-		searchEntry,
-		listWithBackground,
-		titleEntry,
-		contentEntry,
-		container.NewHBox(saveButton, deleteButton, cancelButton),
-	)
-
-	myWindow.SetContent(content)
-	myWindow.Resize(fyne.NewSize(800, 600))
-	myWindow.ShowAndRun()
 }
