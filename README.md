@@ -1,98 +1,101 @@
-# FastCode: Snippet Yönetim Uygulaması
+# FastCode: Snippet Management Application
 
-FastCode, geliştiriciler için hızlı ve verimli bir şekilde kod snippet'lerini (kod parçacıklarını) oluşturma, düzenleme, arama ve yönetme amacıyla geliştirilmiş bir masaüstü uygulamasıdır. Basit bir arayüz ile snippet'leri organize etmenize ve ihtiyaç duyduğunuzda hızlıca erişmenize olanak tanır.
-
----
-
-## 🚀 Özellikler
-
-- **Snippet Yönetimi**:
-    - Yeni snippet ekleme, düzenleme ve silme işlemleri.
-- **Tema Desteği**:
-    - Varsayılan olarak **Karanlık Tema**.
-    - Kullanıcı isteğine göre **Açık Tema** seçeneği.
-- **Arama Fonksiyonu**:
-    - Snippet başlıkları arasında hızlı arama yapabilme.
-- **Kalıcı Depolama**:
-    - Snippet'ler `snippets.json` dosyasında saklanır.
-- **Kullanıcı Dostu Arayüz**:
-    - Minimal ve anlaşılır bir tasarım ile hızlı erişim imkanı.
+FastCode is a desktop application designed for developers to create, edit, search, and manage code snippets efficiently and effectively. With its simple interface, you can organize your snippets and access them quickly when needed.
 
 ---
 
-## 📂 Klasör Yapısı
+## 🚀 Features
+
+- **Snippet Management**:
+    - Add, edit, and delete snippets easily.
+- **Theme Support**:
+    - Default **Dark Theme**.
+    - Option to switch to **Light Theme**.
+- **Search Functionality**:
+    - Quickly search through snippet titles.
+- **Persistent Storage**:
+    - Snippets are stored in a `snippets.json` file for permanence.
+- **User-Friendly Interface**:
+    - Minimal and intuitive design for quick access.
+
+---
+
+## 📂 Folder Structure
 
 ```plaintext
 FastCode/
-├── main.go          # Ana uygulama dosyası
-├── snippets.json    # Snippet'lerin saklandığı JSON dosyası
-└── README.md        # Projenin açıklama dosyası
+├── main.go          # Main application file
+├── snippets.json    # JSON file to store snippets
+├── services/        # Folder for application services
+│   └── snippet.go   # Service for snippet management
+└── README.md        # Project documentation
 ```
 
-##  Kullanım Kılavuzu
+## 📖  Usage Guide
 
-- Go'nun bilgisayarınıza kurulu olduğundan emin olun:
-  $ go version
+- Make sure Go is installed on your system:
+  `$ go version`
 
-- Proje klasörüne gidin:
-  $ cd fast-code
+- Navigate to the project folder:
+  `$ cd fast-paste`
 
-- Uygulamayı başlatın:
-  $ go run main.go
+- Run the application:
+  `$ go run main.go`
 
-##  Özelliklerin Kullanımı
+##   Application Features
 
-## Snippet Ekleme
+### Snippet Ekleme
 
-1. "Başlık" alanına bir başlık yazın.
-2. "İçerik" alanına kod snippet'inizi yazın.
-3. "Kaydet" düğmesine tıklayarak snippet'i kaydedin.
+1. Enter a title in the "Subject" field.
+2. Write your code snippet in the "Snippet" field.
+3. Click the Save button to save your snippet.
 
-###  Snippet Arama
+###  Searching Snippets
 
-1. Üstteki arama çubuğuna snippet başlığını yazın.
-2. İlgili sonuçlar listede görünecektir.
+1. Use the search bar at the top to search for a snippet title.
+2. Matching results will appear in the list.
 
-### Snippet Düzenleme
+### Editing Snippets
 
-1. Listeden düzenlemek istediğiniz bir snippet'e tıklayın.
-2. Gerekli değişiklikleri yapıp "Kaydet" düğmesine tıklayın.
+1. Click on a snippet from the list to select it.
+2. Make the desired changes in the "Title" and "Content" fields.
+3. Click the Save button to save the updated snippet.
 
-### Snippet Silme
+### Deleting Snippets
 
-1. Listeden silmek istediğiniz snippet'i seçin.
-2. "Sil" düğmesine tıklayarak snippet'i kaldırın.
+1. Select the snippet you want to delete from the list.
+2. Click the Delete button to remove the snippet.
 
-### Tema Değiştirme 
+### Switching Themes
 
-1. Tema seçim kutusundan "Karanlık" veya "Beyaz" temayı seçin.
-
-
-## 🛠️ Kullanılan Teknolojiler
-
-- Programlama Dili: Go (Golang)
-- Arayüz Kütüphanesi: Fyne (https://fyne.io)
+1. Use the theme selector dropdown to choose between "Dark" and "Light" themes.
+2. Light theme adjusts all inputs and text areas to have a gray background and darker text for visibility.
 
 
-## 🤝 Katkı Sağlama
+## 🛠️ Technologies Used
 
-1. Bu repoyu forklayın:
-   $ git clone https://github.com/Tahaknd/fast-code.git
-
-2. Yeni bir branch oluşturun:
-   $ git checkout -b yeni-ozellik
-
-3. Değişiklik yapın ve commit edin:
-   $ git commit -m "Yeni özellik eklendi: ..."
-
-4. Değişikliklerinizi uzak repoya gönderin:
-   $ git push origin yeni-ozellik
-
-5. Pull Request gönderin.
+- Programming Language: Go (Golang)
+- UI Framework: Fyne (https://fyne.io)
 
 
-## 🐞 Sorunlar ve Geri Bildirim 
+## 🤝 Contributing
 
-- Bir sorunla karşılaşırsanız veya yeni bir özellik önermek isterseniz, bir issue oluşturabilirsiniz:
-  https://github.com/Tahaknd/fast-code/issues
+1. Fork this repository:
+   `$ git clone https://github.com/Tahaknd/fast-paste.git`
+
+2. Create a new branch:
+   `$ git checkout -b new-feature`
+
+3. Make your changes and commit them:
+   `$ git commit -m "New feature added: ..."`
+
+4. Push your changes to the remote repository:
+   `$ git push origin new-feature`
+
+5. Submit a Pull Request.
+
+
+## 🐞  Issues and Feedback
+
+- If you encounter any issues or have suggestions for new features, feel free to create an issue here: https://github.com/Tahaknd/fast-paste/issues
 
