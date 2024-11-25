@@ -2,6 +2,8 @@
 
 FastCode is a desktop application designed for developers to create, edit, search, and manage code snippets efficiently and effectively. With its simple interface, you can organize your snippets and access them quickly when needed.
 
+![img.png](img.png)
+
 ---
 
 ## 🚀 Features
